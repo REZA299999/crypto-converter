@@ -54,7 +54,7 @@
 
   <div>
     <label>Jumlah:<br>
-      <input type="number" id="amount" value="1" min="0">
+      <input type="number" id="amount" value="1" min="0" step="any" />
     </label>
   </div>
 
@@ -87,6 +87,7 @@
     const resultText = document.getElementById("result");
 
     let chart;
+    let convertTimeout;
 
     function populateSelects() {
       supportedCoins.forEach(({ symbol }) => {
@@ -106,82 +107,109 @@
       updateIcons();
     }
 
+    function getIconUrl(iconName) {
+      // Ganti ke CDN icon yang lebih reliable
+      return `https://raw.githubusercontent.com/atomiclabs/cryptocurrency-icons/master/128/color/${iconName}.png`;
+    }
+
     function updateIcons() {
       const from = supportedCoins.find(c => c.symbol === fromSelect.value);
       const to = supportedCoins.find(c => c.symbol === toSelect.value);
-      iconFrom.src = `https://crypto-icons.pages.dev/api/icon/${from.icon}`;
-      iconTo.src = `https://crypto-icons.pages.dev/api/icon/${to.icon}`;
+      iconFrom.src = from ? getIconUrl(from.icon) : "";
+      iconTo.src = to ? getIconUrl(to.icon) : "";
+      iconFrom.alt = from ? from.symbol : "";
+      iconTo.alt = to ? to.symbol : "";
     }
 
     async function convert() {
-      const from = fromSelect.value;
-      const to = toSelect.value;
-      const amount = parseFloat(amountInput.value);
-      const pair = `${from}${to}`;
+      clearTimeout(convertTimeout);
+      convertTimeout = setTimeout(async () => {
+        const from = fromSelect.value;
+        const to = toSelect.value;
+        const amount = parseFloat(amountInput.value);
 
-      if (!amount || amount <= 0) {
-        resultText.textContent = "Masukkan jumlah valid...";
-        return;
-      }
+        if (!amount || amount <= 0) {
+          resultText.textContent = "Masukkan jumlah valid...";
+          return;
+        }
 
-      try {
-        const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pair}`);
-        const data = await res.json();
+        // Cek pasangan symbol di Binance
+        const pair = `${from}${to}`;
 
-        if (data.price) {
-          const converted = parseFloat(data.price) * amount;
-          resultText.textContent = `${amount} ${from} ≈ ${converted.toFixed(6)} ${to}`;
-        } else {
+        try {
+          const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pair}`);
+          if (!res.ok) throw new Error("Pasangan tidak ditemukan");
+          const data = await res.json();
+
+          if (data.price) {
+            const converted = parseFloat(data.price) * amount;
+            resultText.textContent = `${amount} ${from} ≈ ${converted.toFixed(6)} ${to}`;
+          } else {
+            resultText.textContent = "Pasangan tidak tersedia di Binance.";
+          }
+        } catch (err) {
           resultText.textContent = "Pasangan tidak tersedia di Binance.";
         }
-      } catch (err) {
-        resultText.textContent = "Gagal memuat harga dari Binance.";
-      }
+      }, 300);
     }
 
     async function drawChart() {
       const coin = fromSelect.value;
       const pair = `${coin}USDT`;
-      const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=1h&limit=24`);
-      const data = await res.json();
 
-      const labels = data.map(d => {
-        const date = new Date(d[0]);
-        return `${date.getHours()}:00`;
-      });
+      try {
+        const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=1h&limit=24`);
+        if (!res.ok) throw new Error("Gagal mengambil data chart");
+        const data = await res.json();
 
-      const prices = data.map(d => parseFloat(d[4]));
+        const labels = data.map(d => {
+          const date = new Date(d[0]);
+          return `${date.getHours()}:00`;
+        });
 
-      const ctx = document.getElementById('chart').getContext('2d');
-      if (chart) chart.destroy();
+        const prices = data.map(d => parseFloat(d[4]));
 
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: `${coin}/USDT`,
-            data: prices,
-            borderColor: '#00f7c4',
-            backgroundColor: 'rgba(0, 247, 196, 0.2)',
-            tension: 0.2
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: { beginAtZero: false },
-            x: { display: true }
+        const ctx = document.getElementById('chart').getContext('2d');
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: `${coin}/USDT`,
+              data: prices,
+              borderColor: '#00f7c4',
+              backgroundColor: 'rgba(0, 247, 196, 0.2)',
+              tension: 0.2
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: { beginAtZero: false },
+              x: { display: true }
+            }
           }
-        }
-      });
+        });
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     populateSelects();
     convert();
     drawChart();
-    fromSelect.addEventListener("change", () => { updateIcons(); convert(); drawChart(); });
-    toSelect.addEventListener("change", () => { updateIcons(); convert(); });
+
+    fromSelect.addEventListener("change", () => {
+      updateIcons();
+      convert();
+      drawChart();
+    });
+    toSelect.addEventListener("change", () => {
+      updateIcons();
+      convert();
+    });
     amountInput.addEventListener("input", convert);
   </script>
 </body>
