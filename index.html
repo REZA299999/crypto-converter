@@ -1,92 +1,116 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoXchanger - CoinMarketCap API</title>
-  <style>
-    body {
-      background-color: #111;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    input, select {
-      padding: 10px;
-      margin: 10px;
-      background-color: #222;
-      color: #fff;
-      border: 1px solid #444;
-      border-radius: 5px;
-    }
-    button {
-      padding: 10px 20px;
-      background-color: #00f7c4;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      color: #111;
-      font-weight: bold;
-    }
-    button:hover {
-      background-color: #00d9aa;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CryptoXchanger - CoinGecko dengan Icon</title>
+<style>
+  body {
+    background-color: #111;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+  select, input {
+    padding: 10px;
+    margin: 10px;
+    background-color: #222;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 5px;
+    width: 150px;
+  }
+  h1 { color: #00f7c4; }
+  #result { margin-top: 20px; font-size: 1.2em; }
+  img.icon {
+    width: 24px;
+    vertical-align: middle;
+    margin-right: 8px;
+    filter: drop-shadow(0 0 1px black);
+  }
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-direction: column;
+  }
+  .select-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+</style>
 </head>
 <body>
-  <h1>💱 CryptoXchanger - CoinMarketCap API</h1>
+  <h1>💱 CryptoXchanger - CoinGecko dengan Icon</h1>
 
-  <label>Dari:<br />
-    <select id="fromCurrency">
-      <option value="BTC">BTC</option>
-      <option value="ETH">ETH</option>
-      <option value="USDT">USDT</option>
-      <option value="BNB">BNB</option>
-      <option value="SOL">SOL</option>
-      <option value="MATIC">MATIC</option>
-    </select>
-  </label>
+  <div>
+    <label>Dari:<br />
+      <div class="select-wrapper">
+        <img id="iconFrom" class="icon" src="" alt="icon dari" />
+        <select id="fromCoin">
+          <option value="bitcoin">BTC</option>
+          <option value="ethereum">ETH</option>
+          <option value="solana">SOL</option>
+          <option value="matic-network">MATIC</option>
+          <option value="tether">USDT</option>
+        </select>
+      </div>
+    </label>
+  </div>
 
-  <label>Ke:<br />
-    <select id="toCurrency">
-      <option value="USD">USD</option>
-      <option value="BTC">BTC</option>
-      <option value="ETH">ETH</option>
-      <option value="USDT">USDT</option>
-    </select>
-  </label>
+  <div>
+    <label>Ke:<br />
+      <div class="select-wrapper">
+        <img id="iconTo" class="icon" src="" alt="icon ke" />
+        <select id="toCoin">
+          <option value="bitcoin">BTC</option>
+          <option value="ethereum">ETH</option>
+          <option value="solana">SOL</option>
+          <option value="matic-network">MATIC</option>
+          <option value="tether">USDT</option>
+        </select>
+      </div>
+    </label>
+  </div>
 
-  <label>Jumlah:<br />
-    <input type="number" id="amount" value="1" min="0" step="any" />
-  </label>
-
-  <br />
+  <div>
+    <label>Jumlah:<br />
+      <input type="number" id="amount" value="1" min="0" step="any" />
+    </label>
+  </div>
 
   <button id="convertBtn">Konversi</button>
 
-  <h2 id="result">Masukkan jumlah dan klik Konversi</h2>
+  <div id="result">Masukkan jumlah lalu klik Konversi</div>
 
   <script>
-    const apiKey = "5e995a96-48b6-49e4-8af5-068f1a349955";
-
-    const fromSelect = document.getElementById("fromCurrency");
-    const toSelect = document.getElementById("toCurrency");
+    const fromCoin = document.getElementById("fromCoin");
+    const toCoin = document.getElementById("toCoin");
     const amountInput = document.getElementById("amount");
-    const resultText = document.getElementById("result");
     const convertBtn = document.getElementById("convertBtn");
+    const result = document.getElementById("result");
+    const iconFrom = document.getElementById("iconFrom");
+    const iconTo = document.getElementById("iconTo");
 
-    async function getPrice(symbol) {
-      const url = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${symbol}`;
+    // Mapping coin IDs to icon names (same as coin id for this source)
+    // No change needed, coin IDs used in src URL directly
+    function updateIcons() {
+      iconFrom.src = `https://crypto-icons.pages.dev/api/icon/${fromCoin.value}/color`;
+      iconFrom.alt = fromCoin.value;
+
+      iconTo.src = `https://crypto-icons.pages.dev/api/icon/${toCoin.value}/color`;
+      iconTo.alt = toCoin.value;
+    }
+
+    async function fetchPrices(ids) {
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=usd`;
       try {
-        const res = await fetch(url, {
-          headers: {
-            "X-CMC_PRO_API_KEY": apiKey
-          }
-        });
-        if (!res.ok) throw new Error("Error fetching price");
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Gagal mengambil data harga");
         const data = await res.json();
-        return data.data[symbol].quote.USD.price;
+        return data;
       } catch (error) {
         console.error(error);
         return null;
@@ -94,40 +118,49 @@
     }
 
     async function convert() {
-      const from = fromSelect.value;
-      const to = toSelect.value;
+      const from = fromCoin.value;
+      const to = toCoin.value;
       const amount = parseFloat(amountInput.value);
 
       if (!amount || amount <= 0) {
-        resultText.textContent = "Masukkan jumlah valid...";
+        result.textContent = "Masukkan jumlah valid...";
         return;
       }
+
       if (from === to) {
-        resultText.textContent = `Jumlah: ${amount} ${from}`;
+        result.textContent = `${amount} ${from.toUpperCase()}`;
         return;
       }
 
-      resultText.textContent = "Menghitung...";
+      result.textContent = "Menghitung...";
 
-      const priceFrom = await getPrice(from);
-      let priceTo;
+      const prices = await fetchPrices([from, to]);
 
-      if (to === "USD") {
-        priceTo = 1;
-      } else {
-        priceTo = await getPrice(to);
-      }
-
-      if (priceFrom === null || priceTo === null) {
-        resultText.textContent = "Gagal mengambil data harga.";
+      if (!prices || !prices[from] || !prices[to]) {
+        result.textContent = "Gagal mengambil data harga.";
         return;
       }
 
-      const converted = amount * (priceFrom / priceTo);
-      resultText.textContent = `${amount} ${from} ≈ ${converted.toFixed(6)} ${to}`;
+      const priceFromUSD = prices[from].usd;
+      const priceToUSD = prices[to].usd;
+
+      const converted = amount * (priceFromUSD / priceToUSD);
+      result.textContent = `${amount} ${from.toUpperCase()} ≈ ${converted.toFixed(6)} ${to.toUpperCase()}`;
     }
 
     convertBtn.addEventListener("click", convert);
+    amountInput.addEventListener("input", convert);
+    fromCoin.addEventListener("change", () => {
+      updateIcons();
+      convert();
+    });
+    toCoin.addEventListener("change", () => {
+      updateIcons();
+      convert();
+    });
+
+    // Init icons on load
+    updateIcons();
   </script>
 </body>
 </html>
