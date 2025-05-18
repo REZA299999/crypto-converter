@@ -4,10 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CryptoXchanger - Konversi Crypto Real-Time</title>
-  <meta name="description" content="Konversi cryptocurrency populer secara real-time dan lihat grafik tren harga mini. Gratis, cepat, dan mudah." />
-  <meta name="keywords" content="crypto converter, konversi crypto, bitcoin to ethereum, btc ke usdt, crypto realtime, exchange crypto" />
-  <meta name="author" content="CryptoXchanger" />
-  <meta name="robots" content="index, follow" />
+  <meta name="description" content="Konversi cryptocurrency populer secara real-time." />
   <style>
     body {
       background-color: #111;
@@ -16,9 +13,7 @@
       text-align: center;
       padding: 20px;
     }
-    h1 {
-      color: #00f7c4;
-    }
+    h1 { color: #00f7c4; }
     select, input {
       padding: 10px;
       margin: 10px;
@@ -32,18 +27,10 @@
       vertical-align: middle;
       margin-right: 5px;
     }
-    .chart-container {
-      width: 120px;
-      height: 60px;
-      display: inline-block;
-      margin: 10px;
-      background: #1b1b1b;
-      border-radius: 8px;
-      padding: 6px;
-    }
-    .coin-symbol {
-      font-size: 12px;
-      color: #aaa;
+    .chart {
+      width: 90%;
+      max-width: 600px;
+      margin: 30px auto;
     }
   </style>
 </head>
@@ -73,28 +60,24 @@
 
   <h2 id="result">Masukkan jumlah untuk melihat hasil...</h2>
 
-  <h3 style="margin-top:40px;">📉 Grafik Tren Harga (Update Real-Time)</h3>
-  <div id="charts"></div>
+  <div class="chart">
+    <canvas id="chart"></canvas>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const supportedCoins = [
-      { id: "bitcoin", symbol: "BTC" },
-      { id: "ethereum", symbol: "ETH" },
-      { id: "litecoin", symbol: "LTC" },
-      { id: "solana", symbol: "SOL" },
-      { id: "tether", symbol: "USDT" },
-      { id: "polygon", symbol: "MATIC" },
-      { id: "binancecoin", symbol: "BNB" },
-      { id: "arbitrum", symbol: "ARB" },
-      { id: "optimism", symbol: "OP" },
-      { id: "base", symbol: "BASE" }
+      { symbol: "BTC", icon: "bitcoin" },
+      { symbol: "ETH", icon: "ethereum" },
+      { symbol: "LTC", icon: "litecoin" },
+      { symbol: "SOL", icon: "solana" },
+      { symbol: "USDT", icon: "tether" },
+      { symbol: "BNB", icon: "binancecoin" },
+      { symbol: "MATIC", icon: "polygon" },
+      { symbol: "ARB", icon: "arbitrum" },
+      { symbol: "OP", icon: "optimism" },
+      { symbol: "BASE", icon: "base" }
     ];
-
-    const iconMap = {};
-    supportedCoins.forEach(c => {
-      iconMap[c.id] = `https://crypto-icons.pages.dev/icons/${c.symbol.toLowerCase()}.svg`;
-    });
 
     const fromSelect = document.getElementById("fromCurrency");
     const toSelect = document.getElementById("toCurrency");
@@ -102,35 +85,39 @@
     const iconTo = document.getElementById("iconTo");
     const amountInput = document.getElementById("amount");
     const resultText = document.getElementById("result");
-    const chartsDiv = document.getElementById("charts");
+
+    let chart;
 
     function populateSelects() {
-      supportedCoins.forEach(coin => {
+      supportedCoins.forEach(({ symbol }) => {
         const optionFrom = document.createElement("option");
-        optionFrom.value = coin.id;
-        optionFrom.textContent = coin.symbol;
+        optionFrom.value = symbol;
+        optionFrom.textContent = symbol;
         fromSelect.appendChild(optionFrom);
 
         const optionTo = document.createElement("option");
-        optionTo.value = coin.id;
-        optionTo.textContent = coin.symbol;
+        optionTo.value = symbol;
+        optionTo.textContent = symbol;
         toSelect.appendChild(optionTo);
       });
 
-      fromSelect.value = "bitcoin";
-      toSelect.value = "ethereum";
+      fromSelect.value = "BTC";
+      toSelect.value = "USDT";
       updateIcons();
     }
 
     function updateIcons() {
-      iconFrom.src = iconMap[fromSelect.value];
-      iconTo.src = iconMap[toSelect.value];
+      const from = supportedCoins.find(c => c.symbol === fromSelect.value);
+      const to = supportedCoins.find(c => c.symbol === toSelect.value);
+      iconFrom.src = `https://crypto-icons.pages.dev/api/icon/${from.icon}`;
+      iconTo.src = `https://crypto-icons.pages.dev/api/icon/${to.icon}`;
     }
 
     async function convert() {
       const from = fromSelect.value;
       const to = toSelect.value;
       const amount = parseFloat(amountInput.value);
+      const pair = `${from}${to}`;
 
       if (!amount || amount <= 0) {
         resultText.textContent = "Masukkan jumlah valid...";
@@ -138,116 +125,62 @@
       }
 
       try {
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`);
+        const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pair}`);
         const data = await res.json();
-        const rate = data[from][to];
-        const converted = rate * amount;
-        resultText.textContent = `${amount} ${from.toUpperCase()} ≈ ${converted.toFixed(6)} ${to.toUpperCase()}`;
+
+        if (data.price) {
+          const converted = parseFloat(data.price) * amount;
+          resultText.textContent = `${amount} ${from} ≈ ${converted.toFixed(6)} ${to}`;
+        } else {
+          resultText.textContent = "Pasangan tidak tersedia di Binance.";
+        }
       } catch (err) {
-        resultText.textContent = "Gagal mengambil data.";
+        resultText.textContent = "Gagal memuat harga dari Binance.";
       }
     }
 
-    let chartInstances = {};
-    let chartData = {};
+    async function drawChart() {
+      const coin = fromSelect.value;
+      const pair = `${coin}USDT`;
+      const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=1h&limit=24`);
+      const data = await res.json();
 
-    async function updateChartRealTime(coin) {
-      try {
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coin.id}&vs_currencies=usd`);
-        const data = await res.json();
-        const price = data[coin.id].usd;
+      const labels = data.map(d => {
+        const date = new Date(d[0]);
+        return `${date.getHours()}:00`;
+      });
 
-        if (!chartData[coin.id]) chartData[coin.id] = [];
-        chartData[coin.id].push(price);
+      const prices = data.map(d => parseFloat(d[4]));
 
-        if (chartData[coin.id].length > 60) chartData[coin.id].shift();
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (chart) chart.destroy();
 
-        const chart = chartInstances[coin.id];
-        if (chart) {
-          chart.data.labels.push(new Date().toLocaleTimeString());
-          chart.data.datasets[0].data.push(price);
-
-          if (chart.data.labels.length > 60) {
-            chart.data.labels.shift();
-            chart.data.datasets[0].data.shift();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: `${coin}/USDT`,
+            data: prices,
+            borderColor: '#00f7c4',
+            backgroundColor: 'rgba(0, 247, 196, 0.2)',
+            tension: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: false },
+            x: { display: true }
           }
-          chart.update();
         }
-      } catch (e) {
-        console.log(`Gagal update chart ${coin.id}`);
-      }
-    }
-
-    async function fetchAndDrawCharts() {
-      chartsDiv.innerHTML = "";
-      chartInstances = {};
-      chartData = {};
-
-      for (const coin of supportedCoins) {
-        const container = document.createElement("div");
-        container.className = "chart-container";
-
-        const canvas = document.createElement("canvas");
-        canvas.id = `chart-${coin.id}`;
-        container.appendChild(canvas);
-
-        const symbolLabel = document.createElement("div");
-        symbolLabel.className = "coin-symbol";
-        symbolLabel.textContent = coin.symbol;
-        container.appendChild(symbolLabel);
-
-        chartsDiv.appendChild(container);
-
-        try {
-          const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}/market_chart?vs_currency=usd&days=7&interval=daily`);
-          const data = await res.json();
-          const prices = data.prices.map(p => p[1]);
-          const labels = prices.map((_, i) => `Hari ${i + 1}`);
-          chartData[coin.id] = prices.slice();
-
-          chartInstances[coin.id] = new Chart(canvas.getContext("2d"), {
-            type: "line",
-            data: {
-              labels: labels,
-              datasets: [{
-                data: prices,
-                borderColor: "#00f7c4",
-                borderWidth: 1.5,
-                fill: false,
-                pointRadius: 0,
-                tension: 0.3
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: {
-                x: { display: false },
-                y: { display: false }
-              },
-              plugins: {
-                legend: { display: false },
-                tooltip: { enabled: false }
-              }
-            }
-          });
-
-          setInterval(() => updateChartRealTime(coin), 60000);
-        } catch {
-          const errorText = document.createElement("div");
-          errorText.style.color = "#f55";
-          errorText.style.fontSize = "10px";
-          errorText.textContent = "Gagal muat grafik";
-          container.appendChild(errorText);
-        }
-      }
+      });
     }
 
     populateSelects();
     convert();
-    fetchAndDrawCharts();
-
-    fromSelect.addEventListener("change", () => { updateIcons(); convert(); });
+    drawChart();
+    fromSelect.addEventListener("change", () => { updateIcons(); convert(); drawChart(); });
     toSelect.addEventListener("change", () => { updateIcons(); convert(); });
     amountInput.addEventListener("input", convert);
   </script>
