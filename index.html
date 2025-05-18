@@ -2,8 +2,12 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoXchanger</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CryptoXchanger - Konversi Crypto Real-Time</title>
+  <meta name="description" content="Konversi cryptocurrency populer seperti Bitcoin, Ethereum, USDT, dan lainnya secara real-time. Gratis, cepat, dan mudah." />
+  <meta name="keywords" content="crypto converter, konversi crypto, bitcoin to ethereum, btc ke usdt, crypto realtime, exchange crypto" />
+  <meta name="author" content="CryptoXchanger" />
+  <meta name="robots" content="index, follow" />
   <style>
     body {
       background-color: #111;
@@ -15,8 +19,7 @@
     h1 {
       color: #00f7c4;
     }
-    select,
-    input {
+    select, input {
       padding: 10px;
       margin: 10px;
       background-color: #222;
@@ -29,82 +32,35 @@
       vertical-align: middle;
       margin-right: 5px;
     }
-    #loading {
-      font-style: italic;
-      color: #888;
-      margin-top: 10px;
-    }
   </style>
 </head>
 <body>
   <h1>💱 <span style="color: #00f7c4">CryptoXchanger</span></h1>
-  <p id="desc">Konversi crypto populer secara real-time</p>
+  <p>Konversi crypto populer secara real-time</p>
 
   <div>
-    <label id="labelFrom">
-      Dari:<br />
-      <img id="iconFrom" class="icon" src="" alt="icon" />
+    <label>Dari:<br>
+      <img id="iconFrom" class="icon" src="" alt="icon">
       <select id="fromCurrency"></select>
     </label>
   </div>
 
   <div>
-    <label id="labelTo">
-      Ke:<br />
-      <img id="iconTo" class="icon" src="" alt="icon" />
+    <label>Ke:<br>
+      <img id="iconTo" class="icon" src="" alt="icon">
       <select id="toCurrency"></select>
     </label>
   </div>
 
   <div>
-    <label id="labelAmount">
-      Jumlah:<br />
-      <input type="number" id="amount" value="1" min="0" />
+    <label>Jumlah:<br>
+      <input type="number" id="amount" value="1" min="0">
     </label>
   </div>
 
   <h2 id="result">Masukkan jumlah untuk melihat hasil...</h2>
-  <div id="loading" style="display:none;">Memuat data...</div>
 
   <script>
-    // Data terjemahan
-    const translations = {
-      id: {
-        title: "Konversi crypto populer secara real-time",
-        from: "Dari",
-        to: "Ke",
-        amount: "Jumlah",
-        inputValid: "Masukkan jumlah valid...",
-        loading: "Memuat data...",
-        failed: "Gagal mengambil data.",
-        resultPrefix: "",
-        resultSuffix: ""
-      },
-      en: {
-        title: "Popular crypto conversion in real-time",
-        from: "From",
-        to: "To",
-        amount: "Amount",
-        inputValid: "Enter a valid amount...",
-        loading: "Loading data...",
-        failed: "Failed to fetch data.",
-        resultPrefix: "",
-        resultSuffix: ""
-      }
-    };
-
-    // Deteksi bahasa browser
-    const userLang = navigator.language || navigator.userLanguage;
-    const lang = userLang.slice(0, 2);
-    const texts = translations[lang] || translations["en"];
-
-    // Update UI teks berdasarkan bahasa
-    document.getElementById("desc").textContent = texts.title;
-    document.getElementById("labelFrom").childNodes[0].textContent = texts.from + ":";
-    document.getElementById("labelTo").childNodes[0].textContent = texts.to + ":";
-    document.getElementById("labelAmount").childNodes[0].textContent = texts.amount + ":";
-    document.getElementById("result").textContent = texts.inputValid;
-
     const supportedCoins = [
       { id: "bitcoin", symbol: "BTC" },
       { id: "ethereum", symbol: "ETH" },
@@ -137,18 +93,17 @@
     const iconTo = document.getElementById("iconTo");
     const amountInput = document.getElementById("amount");
     const resultText = document.getElementById("result");
-    const loadingText = document.getElementById("loading");
 
     function populateSelects() {
       supportedCoins.forEach(coin => {
         const optionFrom = document.createElement("option");
         optionFrom.value = coin.id;
-        optionFrom.textContent = coin.symbol;
+        optionFrom.textContent = `${coin.symbol}`;
         fromSelect.appendChild(optionFrom);
 
         const optionTo = document.createElement("option");
         optionTo.value = coin.id;
-        optionTo.textContent = coin.symbol;
+        optionTo.textContent = `${coin.symbol}`;
         toSelect.appendChild(optionTo);
       });
 
@@ -168,40 +123,25 @@
       const amount = parseFloat(amountInput.value);
 
       if (!amount || amount <= 0) {
-        resultText.textContent = texts.inputValid;
+        resultText.textContent = "Masukkan jumlah valid...";
         return;
       }
 
-      loadingText.style.display = "block";
-      resultText.textContent = "";
-
       try {
-        const res = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`
-        );
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`);
         const data = await res.json();
         const rate = data[from][to];
-
         const converted = rate * amount;
         resultText.textContent = `${amount} ${from.toUpperCase()} ≈ ${converted.toFixed(6)} ${to.toUpperCase()}`;
       } catch (err) {
-        resultText.textContent = texts.failed;
-      } finally {
-        loadingText.style.display = "none";
+        resultText.textContent = "Gagal mengambil data.";
       }
     }
 
     populateSelects();
     convert();
-
-    fromSelect.addEventListener("change", () => {
-      updateIcons();
-      convert();
-    });
-    toSelect.addEventListener("change", () => {
-      updateIcons();
-      convert();
-    });
+    fromSelect.addEventListener("change", () => { updateIcons(); convert(); });
+    toSelect.addEventListener("change", () => { updateIcons(); convert(); });
     amountInput.addEventListener("input", convert);
   </script>
 </body>
