@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auto Crypto Converter - Konversi Cryptocurrency Real-time</title>
+  <meta name="description" content="Website auto converter crypto yang mudah digunakan, konversi harga Bitcoin, Ethereum, Litecoin secara real-time dan akurat." />
+  <meta name="keywords" content="crypto converter, konversi cryptocurrency, bitcoin, ethereum, litecoin, harga crypto, auto convert crypto" />
+  <meta name="author" content="Nama Kamu" />
+  <meta name="robots" content="index, follow" />
+
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; padding: 0 15px; background: #f9f9f9; color: #222; }
+    h1 { text-align: center; color: #2c3e50; }
+    label { display: block; margin: 15px 0 5px; }
+    select, input[type="number"] { width: 100%; padding: 8px; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px; }
+    button { margin-top: 20px; width: 100%; padding: 12px; background-color: #27ae60; color: white; border: none; border-radius: 6px; font-size: 1.2rem; cursor: pointer; }
+    button:hover { background-color: #219150; }
+    #result { margin-top: 25px; font-size: 1.1rem; font-weight: bold; text-align: center; color: #34495e; }
+    footer { margin-top: 50px; font-size: 0.9rem; text-align: center; color: #999; }
+  </style>
+</head>
+<body>
+  <h1>Auto Crypto Converter</h1>
+  <p>Konversi cryptocurrency secara cepat dan real-time menggunakan data harga terbaru.</p>
+
+  <label for="fromCrypto">Dari:</label>
+  <select id="fromCrypto" aria-label="Pilih crypto asal">
+    <option value="bitcoin">Bitcoin (BTC)</option>
+    <option value="ethereum">Ethereum (ETH)</option>
+    <option value="litecoin">Litecoin (LTC)</option>
+  </select>
+
+  <label for="toCrypto">Ke:</label>
+  <select id="toCrypto" aria-label="Pilih crypto tujuan">
+    <option value="bitcoin">Bitcoin (BTC)</option>
+    <option value="ethereum">Ethereum (ETH)</option>
+    <option value="litecoin">Litecoin (LTC)</option>
+  </select>
+
+  <label for="amount">Jumlah:</label>
+  <input type="number" id="amount" aria-label="Masukkan jumlah crypto" value="1" min="0" step="any" />
+
+  <button onclick="convert()">Convert</button>
+
+  <p id="result" aria-live="polite"></p>
+
+  <footer>
+    &copy; 2025 Nama Kamu. Semua hak dilindungi.
+  </footer>
+
+  <script>
+    async function convert() {
+      const from = document.getElementById("fromCrypto").value;
+      const to = document.getElementById("toCrypto").value;
+      const amount = parseFloat(document.getElementById("amount").value);
+      const resultEl = document.getElementById("result");
+
+      if (from === to) {
+        resultEl.textContent = "Silakan pilih crypto asal dan tujuan yang berbeda.";
+        return;
+      }
+      if (amount <= 0 || isNaN(amount)) {
+        resultEl.textContent = "Masukkan jumlah yang valid.";
+        return;
+      }
+
+      resultEl.textContent = "Menghitung...";
+
+      try {
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${from},${to}&vs_currencies=usd`);
+        const data = await res.json();
+
+        const fromPriceUSD = data[from].usd;
+        const toPriceUSD = data[to].usd;
+
+        const convertedAmount = (amount * fromPriceUSD) / toPriceUSD;
+
+        resultEl.textContent = `${amount} ${from.toUpperCase()} = ${convertedAmount.toFixed(6)} ${to.toUpperCase()}`;
+      } catch {
+        resultEl.textContent = "Gagal mengambil data harga. Silakan coba lagi nanti.";
+      }
+    }
+  </script>
+</body>
+</html>
