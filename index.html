@@ -3,16 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CryptoXchanger - Konversi Crypto Real-Time</title>
+  <title>CryptoXchanger</title>
 
-  <!-- Verifikasi Google Search Console -->
+  <!-- ✅ Meta tag verifikasi Google -->
   <meta name="google-site-verification" content="google63c2ef78064f195a.html" />
-
-  <!-- SEO meta -->
-  <meta name="description" content="Konversi cryptocurrency populer seperti Bitcoin, Ethereum, USDT, dan lainnya secara real-time. Gratis, cepat, dan mudah." />
-  <meta name="keywords" content="crypto converter, konversi crypto, bitcoin to ethereum, btc ke usdt, crypto realtime, exchange crypto" />
-  <meta name="author" content="CryptoXchanger" />
-  <meta name="robots" content="index, follow" />
 
   <style>
     body {
@@ -137,6 +131,7 @@
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`);
         const data = await res.json();
         const rate = data[from][to];
+
         const converted = rate * amount;
         resultText.textContent = `${amount} ${from.toUpperCase()} ≈ ${converted.toFixed(6)} ${to.toUpperCase()}`;
       } catch (err) {
