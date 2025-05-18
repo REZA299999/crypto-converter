@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CryptoXchanger - Konversi Crypto Real-Time</title>
   <meta name="description" content="Konversi cryptocurrency populer secara real-time." />
   <style>
@@ -107,16 +107,11 @@
       updateIcons();
     }
 
-    function getIconUrl(iconName) {
-      // Ganti ke CDN icon yang lebih reliable
-      return `https://raw.githubusercontent.com/atomiclabs/cryptocurrency-icons/master/128/color/${iconName}.png`;
-    }
-
     function updateIcons() {
       const from = supportedCoins.find(c => c.symbol === fromSelect.value);
       const to = supportedCoins.find(c => c.symbol === toSelect.value);
-      iconFrom.src = from ? getIconUrl(from.icon) : "";
-      iconTo.src = to ? getIconUrl(to.icon) : "";
+      iconFrom.src = from ? `https://crypto-icons.pages.dev/api/icon/${from.icon}/color` : "";
+      iconTo.src = to ? `https://crypto-icons.pages.dev/api/icon/${to.icon}/color` : "";
       iconFrom.alt = from ? from.symbol : "";
       iconTo.alt = to ? to.symbol : "";
     }
@@ -133,7 +128,6 @@
           return;
         }
 
-        // Cek pasangan symbol di Binance
         const pair = `${from}${to}`;
 
         try {
