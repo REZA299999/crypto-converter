@@ -61,6 +61,8 @@
   <h2 id="result">Masukkan jumlah untuk melihat hasil...</h2>
 
   <script>
+    const baseUrl = "https://reza299999.github.io/crypto-converter/crypto-icons/";
+
     const supportedCoins = [
       { id: "bitcoin", symbol: "BTC" },
       { id: "ethereum", symbol: "ETH" },
@@ -73,14 +75,14 @@
     ];
 
     const iconMap = {
-      bitcoin: "icons/bitcoin-btc-logo.png",
-      ethereum: "icons/ethereum-eth-logo.png",
-      litecoin: "icons/litecoin-ltc-logo.png",
-      solana: "icons/solana-sol-logo.png",
-      tether: "icons/tether-usdt-logo.png",
-      polygon: "icons/polygon-matic-logo.png",
-      binancecoin: "icons/binance-coin-bnb-logo.png",
-      arbitrum: "icons/arbitrum-arb-logo.png"
+      bitcoin: baseUrl + "bitcoin-btc-logo.png",
+      ethereum: baseUrl + "ethereum-eth-logo.png",
+      litecoin: baseUrl + "litecoin-ltc-logo.png",
+      solana: baseUrl + "solana-sol-logo.png",
+      tether: baseUrl + "tether-usdt-logo.png",
+      polygon: baseUrl + "polygon-matic-logo.png",
+      binancecoin: baseUrl + "binance-coin-bnb-logo.png",
+      arbitrum: baseUrl + "arbitrum-arb-logo.png"
     };
 
     const fromSelect = document.getElementById("fromCurrency");
