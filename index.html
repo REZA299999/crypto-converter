@@ -1,91 +1,174 @@
-// AutoCryptoConverter.tsx
-import { useEffect, useState } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Crypto Converter</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #111827;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
 
-const symbols = ["BTC", "ETH", "SOL", "MATIC"];
-const quote = "USDT";
+    .container {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      background: #1f2937;
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      text-align: center;
+    }
 
-export default function AutoCryptoConverter() {
-  const [prices, setPrices] = useState<Record<string, number>>({});
-  const [selectedSymbol, setSelectedSymbol] = useState("BTC");
-  const [inputValue, setInputValue] = useState("");
-  const [convertTo, setConvertTo] = useState<"crypto" | "usdt">("usdt");
+    h1 {
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+    }
 
-  useEffect(() => {
-    const ws = new WebSocket(
-      `wss://stream.binance.com:9443/stream?streams=${symbols
-        .map((s) => `${s.toLowerCase()}usdt@miniTicker`)
-        .join("/")}`
-    );
+    .converter-box {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const symbol = data.data.s.replace("USDT", "");
-      const price = parseFloat(data.data.c);
-      setPrices((prev) => ({ ...prev, [symbol]: price }));
+    .select-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .select-row img {
+      width: 28px;
+      height: 28px;
+    }
+
+    .select-row select, #toggleBtn {
+      padding: 8px;
+      background: #374151;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .input-row {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .input-row input {
+      width: 100%;
+      padding: 10px;
+      background: #374151;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .result {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .livePrice {
+      font-size: 0.9rem;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Crypto ↔ USDT Converter</h1>
+
+    <div class="converter-box">
+      <div class="select-row">
+        <img id="coinLogo" src="https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=032" alt="logo" />
+        <select id="cryptoSelect">
+          <option value="BTC">BTC</option>
+          <option value="ETH">ETH</option>
+          <option value="SOL">SOL</option>
+          <option value="MATIC">MATIC</option>
+        </select>
+        <button id="toggleBtn">⇆</button>
+      </div>
+
+      <div class="input-row">
+        <label id="inputLabel">BTC Amount</label>
+        <input type="number" id="amountInput" placeholder="0.0" />
+      </div>
+
+      <div class="result" id="resultOutput">= 0.00 USDT</div>
+      <div class="livePrice" id="livePrice">Live Price: --</div>
+    </div>
+  </div>
+
+  <script>
+    const cryptoSelect = document.getElementById("cryptoSelect");
+    const amountInput = document.getElementById("amountInput");
+    const resultOutput = document.getElementById("resultOutput");
+    const livePrice = document.getElementById("livePrice");
+    const inputLabel = document.getElementById("inputLabel");
+    const toggleBtn = document.getElementById("toggleBtn");
+    const coinLogo = document.getElementById("coinLogo");
+
+    let convertTo = "usdt";
+    let prices = {};
+
+    const logoMap = {
+      BTC: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=032",
+      ETH: "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=032",
+      SOL: "https://cryptologos.cc/logos/solana-sol-logo.png?v=032",
+      MATIC: "https://cryptologos.cc/logos/polygon-matic-logo.png?v=032"
     };
 
-    return () => ws.close();
-  }, []);
+    function updateResult() {
+      const symbol = cryptoSelect.value;
+      const price = prices[symbol] || 0;
+      const value = parseFloat(amountInput.value);
+      if (isNaN(value)) {
+        resultOutput.textContent = "= 0.00";
+        return;
+      }
 
-  const price = prices[selectedSymbol] || 0;
-  const isCryptoToUSDT = convertTo === "usdt";
+      if (convertTo === "usdt") {
+        resultOutput.textContent = `= ${(value * price).toFixed(2)} USDT`;
+      } else {
+        resultOutput.textContent = `= ${(value / price).toFixed(6)} ${symbol}`;
+      }
 
-  const result = (() => {
-    const val = parseFloat(inputValue);
-    if (isNaN(val)) return "";
-    return isCryptoToUSDT
-      ? (val * price).toFixed(2)
-      : (val / price).toFixed(6);
-  })();
+      livePrice.textContent = `Live Price: 1 ${symbol} = ${price.toFixed(2)} USDT`;
+      inputLabel.textContent = convertTo === "usdt" ? `${symbol} Amount` : `USDT Amount`;
+      coinLogo.src = logoMap[symbol];
+    }
 
-  return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
-      <div className="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md space-y-6">
-        <h1 className="text-2xl font-bold text-center">Crypto ↔ USDT Converter</h1>
+    toggleBtn.addEventListener("click", () => {
+      convertTo = convertTo === "usdt" ? "crypto" : "usdt";
+      updateResult();
+    });
 
-        <div className="flex space-x-2">
-          <select
-            className="flex-1 bg-gray-700 p-2 rounded text-white"
-            value={selectedSymbol}
-            onChange={(e) => setSelectedSymbol(e.target.value)}
-          >
-            {symbols.map((sym) => (
-              <option key={sym} value={sym}>
-                {sym}
-              </option>
-            ))}
-          </select>
-          <button
-            className="bg-blue-600 hover:bg-blue-500 rounded px-4"
-            onClick={() =>
-              setConvertTo(convertTo === "usdt" ? "crypto" : "usdt")
-            }
-          >
-            ⇆
-          </button>
-        </div>
+    cryptoSelect.addEventListener("change", updateResult);
+    amountInput.addEventListener("input", updateResult);
 
-        <div className="space-y-2">
-          <label className="block text-sm text-gray-400">
-            {isCryptoToUSDT ? selectedSymbol : "USDT"} Amount
-          </label>
-          <input
-            type="number"
-            className="w-full p-2 bg-gray-700 rounded text-white"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="0.0"
-          />
-        </div>
+    const streams = ["btcusdt", "ethusdt", "solusdt", "maticusdt"]
+      .map(s => `${s}@miniTicker`).join("/");
+    const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
 
-        <div className="text-center text-lg mt-4">
-          = {result} {isCryptoToUSDT ? "USDT" : selectedSymbol}
-        </div>
-
-        <div className="text-sm text-gray-400 text-center">
-          Live price: 1 {selectedSymbol} = {price || "..."} USDT
-        </div>
-      </div>
-    </div>
-  );
-}
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      const { s, c } = msg.data;
+      const symbol = s.replace("USDT", "");
+      prices[symbol] = parseFloat(c);
+      updateResult();
+    };
+  </script>
+</body>
+</html>
