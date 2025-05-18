@@ -2,9 +2,9 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CryptoXchanger - Konversi Crypto Real-Time</title>
-  <meta name="description" content="Konversi cryptocurrency populer seperti Bitcoin, Ethereum, USDT, dan lainnya secara real-time. Gratis, cepat, dan mudah." />
+  <meta name="description" content="Konversi cryptocurrency populer secara real-time dan lihat grafik tren harga mini. Gratis, cepat, dan mudah." />
   <meta name="keywords" content="crypto converter, konversi crypto, bitcoin to ethereum, btc ke usdt, crypto realtime, exchange crypto" />
   <meta name="author" content="CryptoXchanger" />
   <meta name="robots" content="index, follow" />
@@ -32,6 +32,19 @@
       vertical-align: middle;
       margin-right: 5px;
     }
+    .chart-container {
+      width: 120px;
+      height: 60px;
+      display: inline-block;
+      margin: 10px;
+      background: #1b1b1b;
+      border-radius: 8px;
+      padding: 6px;
+    }
+    .coin-symbol {
+      font-size: 12px;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
@@ -40,29 +53,31 @@
 
   <div>
     <label>Dari:<br>
-      <img id="iconFrom" class="icon" src="" alt="icon dari crypto" />
+      <img id="iconFrom" class="icon" src="" alt="icon">
       <select id="fromCurrency"></select>
     </label>
   </div>
 
   <div>
     <label>Ke:<br>
-      <img id="iconTo" class="icon" src="" alt="icon ke crypto" />
+      <img id="iconTo" class="icon" src="" alt="icon">
       <select id="toCurrency"></select>
     </label>
   </div>
 
   <div>
     <label>Jumlah:<br>
-      <input type="number" id="amount" value="1" min="0" />
+      <input type="number" id="amount" value="1" min="0">
     </label>
   </div>
 
   <h2 id="result">Masukkan jumlah untuk melihat hasil...</h2>
 
-  <script>
-    const baseUrl = "https://reza299999.github.io/crypto-converter/crypto-icons/";
+  <h3 style="margin-top:40px;">📉 Grafik Tren Harga (Update Real-Time)</h3>
+  <div id="charts"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
     const supportedCoins = [
       { id: "bitcoin", symbol: "BTC" },
       { id: "ethereum", symbol: "ETH" },
@@ -71,19 +86,15 @@
       { id: "tether", symbol: "USDT" },
       { id: "polygon", symbol: "MATIC" },
       { id: "binancecoin", symbol: "BNB" },
-      { id: "arbitrum", symbol: "ARB" }
+      { id: "arbitrum", symbol: "ARB" },
+      { id: "optimism", symbol: "OP" },
+      { id: "base", symbol: "BASE" }
     ];
 
-    const iconMap = {
-      bitcoin: baseUrl + "bitcoin-btc-logo.png",
-      ethereum: baseUrl + "ethereum-eth-logo.png",
-      litecoin: baseUrl + "litecoin-ltc-logo.png",
-      solana: baseUrl + "solana-sol-logo.png",
-      tether: baseUrl + "tether-usdt-logo.png",
-      polygon: baseUrl + "polygon-matic-logo.png",
-      binancecoin: baseUrl + "binance-coin-bnb-logo.png",
-      arbitrum: baseUrl + "arbitrum-arb-logo.png"
-    };
+    const iconMap = {};
+    supportedCoins.forEach(c => {
+      iconMap[c.id] = `https://crypto-icons.pages.dev/icons/${c.symbol.toLowerCase()}.svg`;
+    });
 
     const fromSelect = document.getElementById("fromCurrency");
     const toSelect = document.getElementById("toCurrency");
@@ -91,17 +102,18 @@
     const iconTo = document.getElementById("iconTo");
     const amountInput = document.getElementById("amount");
     const resultText = document.getElementById("result");
+    const chartsDiv = document.getElementById("charts");
 
     function populateSelects() {
       supportedCoins.forEach(coin => {
         const optionFrom = document.createElement("option");
         optionFrom.value = coin.id;
-        optionFrom.textContent = `${coin.symbol}`;
+        optionFrom.textContent = coin.symbol;
         fromSelect.appendChild(optionFrom);
 
         const optionTo = document.createElement("option");
         optionTo.value = coin.id;
-        optionTo.textContent = `${coin.symbol}`;
+        optionTo.textContent = coin.symbol;
         toSelect.appendChild(optionTo);
       });
 
@@ -111,8 +123,8 @@
     }
 
     function updateIcons() {
-      iconFrom.src = iconMap[fromSelect.value] || "";
-      iconTo.src = iconMap[toSelect.value] || "";
+      iconFrom.src = iconMap[fromSelect.value];
+      iconTo.src = iconMap[toSelect.value];
     }
 
     async function convert() {
@@ -126,33 +138,115 @@
       }
 
       try {
-        // Ambil harga dari dan ke dalam USD
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${from},${to}&vs_currencies=usd`);
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`);
         const data = await res.json();
-
-        if (!data[from] || !data[to]) {
-          resultText.textContent = "Data harga tidak tersedia.";
-          return;
-        }
-
-        const priceFromUSD = data[from].usd;
-        const priceToUSD = data[to].usd;
-
-        if (!priceFromUSD || !priceToUSD) {
-          resultText.textContent = "Harga USD tidak tersedia untuk salah satu koin.";
-          return;
-        }
-
-        // Hitung hasil konversi
-        const converted = (amount * priceFromUSD) / priceToUSD;
+        const rate = data[from][to];
+        const converted = rate * amount;
         resultText.textContent = `${amount} ${from.toUpperCase()} ≈ ${converted.toFixed(6)} ${to.toUpperCase()}`;
       } catch (err) {
         resultText.textContent = "Gagal mengambil data.";
       }
     }
 
+    let chartInstances = {};
+    let chartData = {};
+
+    async function updateChartRealTime(coin) {
+      try {
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coin.id}&vs_currencies=usd`);
+        const data = await res.json();
+        const price = data[coin.id].usd;
+
+        if (!chartData[coin.id]) chartData[coin.id] = [];
+        chartData[coin.id].push(price);
+
+        if (chartData[coin.id].length > 60) chartData[coin.id].shift();
+
+        const chart = chartInstances[coin.id];
+        if (chart) {
+          chart.data.labels.push(new Date().toLocaleTimeString());
+          chart.data.datasets[0].data.push(price);
+
+          if (chart.data.labels.length > 60) {
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+          }
+          chart.update();
+        }
+      } catch (e) {
+        console.log(`Gagal update chart ${coin.id}`);
+      }
+    }
+
+    async function fetchAndDrawCharts() {
+      chartsDiv.innerHTML = "";
+      chartInstances = {};
+      chartData = {};
+
+      for (const coin of supportedCoins) {
+        const container = document.createElement("div");
+        container.className = "chart-container";
+
+        const canvas = document.createElement("canvas");
+        canvas.id = `chart-${coin.id}`;
+        container.appendChild(canvas);
+
+        const symbolLabel = document.createElement("div");
+        symbolLabel.className = "coin-symbol";
+        symbolLabel.textContent = coin.symbol;
+        container.appendChild(symbolLabel);
+
+        chartsDiv.appendChild(container);
+
+        try {
+          const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}/market_chart?vs_currency=usd&days=7&interval=daily`);
+          const data = await res.json();
+          const prices = data.prices.map(p => p[1]);
+          const labels = prices.map((_, i) => `Hari ${i + 1}`);
+          chartData[coin.id] = prices.slice();
+
+          chartInstances[coin.id] = new Chart(canvas.getContext("2d"), {
+            type: "line",
+            data: {
+              labels: labels,
+              datasets: [{
+                data: prices,
+                borderColor: "#00f7c4",
+                borderWidth: 1.5,
+                fill: false,
+                pointRadius: 0,
+                tension: 0.3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { display: false },
+                y: { display: false }
+              },
+              plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+              }
+            }
+          });
+
+          setInterval(() => updateChartRealTime(coin), 60000);
+        } catch {
+          const errorText = document.createElement("div");
+          errorText.style.color = "#f55";
+          errorText.style.fontSize = "10px";
+          errorText.textContent = "Gagal muat grafik";
+          container.appendChild(errorText);
+        }
+      }
+    }
+
     populateSelects();
     convert();
+    fetchAndDrawCharts();
+
     fromSelect.addEventListener("change", () => { updateIcons(); convert(); });
     toSelect.addEventListener("change", () => { updateIcons(); convert(); });
     amountInput.addEventListener("input", convert);
