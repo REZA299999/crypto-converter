@@ -2,229 +2,207 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CryptoXchanger - Dark Mode</title>
-  <meta name="description" content="Converter crypto interaktif real-time dengan tema gelap. Dukungan BTC, ETH, LTC, SOL, USDT, dan lainnya.">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CryptoXchanger</title>
   <style>
     body {
-      background-color: #121212;
-      color: #f0f0f0;
+      background-color: #111;
+      color: #fff;
       font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: auto;
-      padding: 30px 20px;
+      text-align: center;
+      padding: 20px;
     }
     h1 {
-      text-align: center;
-      color: #00ffcc;
+      color: #00f7c4;
     }
-    label {
-      margin-top: 20px;
-      display: block;
-    }
-    .crypto-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    select, input {
-      flex: 1;
+    select,
+    input {
       padding: 10px;
-      border-radius: 5px;
-      border: none;
-      background: #1e1e1e;
+      margin: 10px;
+      background-color: #222;
       color: #fff;
+      border: 1px solid #444;
+      border-radius: 5px;
     }
-    .crypto-icon {
-      width: 28px;
-      height: 28px;
+    img.icon {
+      width: 24px;
+      vertical-align: middle;
+      margin-right: 5px;
     }
-    #result {
-      margin-top: 25px;
-      font-size: 1.3rem;
-      text-align: center;
-      color: #00e6a8;
-    }
-    canvas {
-      margin-top: 40px;
-      background: #1e1e1e;
-      padding: 15px;
-      border-radius: 10px;
-    }
-    footer {
-      text-align: center;
-      margin-top: 50px;
-      font-size: 0.85rem;
-      color: #666;
+    #loading {
+      font-style: italic;
+      color: #888;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>💱 CryptoXchanger</h1>
-  <p style="text-align: center;">Konversi crypto populer secara real-time</p>
+  <h1>💱 <span style="color: #00f7c4">CryptoXchanger</span></h1>
+  <p id="desc">Konversi crypto populer secara real-time</p>
 
-  <label>Dari:</label>
-  <div class="crypto-row">
-    <img id="fromIcon" class="crypto-icon" src="" alt="icon" />
-    <select id="from"></select>
+  <div>
+    <label id="labelFrom">
+      Dari:<br />
+      <img id="iconFrom" class="icon" src="" alt="icon" />
+      <select id="fromCurrency"></select>
+    </label>
   </div>
 
-  <label>Ke:</label>
-  <div class="crypto-row">
-    <img id="toIcon" class="crypto-icon" src="" alt="icon" />
-    <select id="to"></select>
+  <div>
+    <label id="labelTo">
+      Ke:<br />
+      <img id="iconTo" class="icon" src="" alt="icon" />
+      <select id="toCurrency"></select>
+    </label>
   </div>
 
-  <label>Jumlah:</label>
-  <input type="number" id="amount" value="1" min="0" step="any" />
+  <div>
+    <label id="labelAmount">
+      Jumlah:<br />
+      <input type="number" id="amount" value="1" min="0" />
+    </label>
+  </div>
 
-  <div id="result">Masukkan jumlah untuk melihat hasil...</div>
-
-  <canvas id="priceChart" width="600" height="300"></canvas>
-
-  <footer>&copy; 2025 CryptoXchanger. Real-time crypto converter.</footer>
+  <h2 id="result">Masukkan jumlah untuk melihat hasil...</h2>
+  <div id="loading" style="display:none;">Memuat data...</div>
 
   <script>
-    const cryptos = {
-      bitcoin: "Bitcoin (BTC)",
-      ethereum: "Ethereum (ETH)",
-      litecoin: "Litecoin (LTC)",
-      solana: "Solana (SOL)",
-      tether: "Tether (USDT)",
-      polygon: "Polygon (MATIC)",
-      binancecoin: "BNB (BNB)",
-      arbitrum: "Arbitrum (ARB)",
-      optimism: "Optimism (OP)",
-      base: "Base (BASE)"
+    // Data terjemahan
+    const translations = {
+      id: {
+        title: "Konversi crypto populer secara real-time",
+        from: "Dari",
+        to: "Ke",
+        amount: "Jumlah",
+        inputValid: "Masukkan jumlah valid...",
+        loading: "Memuat data...",
+        failed: "Gagal mengambil data.",
+        resultPrefix: "",
+        resultSuffix: ""
+      },
+      en: {
+        title: "Popular crypto conversion in real-time",
+        from: "From",
+        to: "To",
+        amount: "Amount",
+        inputValid: "Enter a valid amount...",
+        loading: "Loading data...",
+        failed: "Failed to fetch data.",
+        resultPrefix: "",
+        resultSuffix: ""
+      }
     };
+
+    // Deteksi bahasa browser
+    const userLang = navigator.language || navigator.userLanguage;
+    const lang = userLang.slice(0, 2);
+    const texts = translations[lang] || translations["en"];
+
+    // Update UI teks berdasarkan bahasa
+    document.getElementById("desc").textContent = texts.title;
+    document.getElementById("labelFrom").childNodes[0].textContent = texts.from + ":";
+    document.getElementById("labelTo").childNodes[0].textContent = texts.to + ":";
+    document.getElementById("labelAmount").childNodes[0].textContent = texts.amount + ":";
+    document.getElementById("result").textContent = texts.inputValid;
+
+    const supportedCoins = [
+      { id: "bitcoin", symbol: "BTC" },
+      { id: "ethereum", symbol: "ETH" },
+      { id: "litecoin", symbol: "LTC" },
+      { id: "solana", symbol: "SOL" },
+      { id: "tether", symbol: "USDT" },
+      { id: "polygon", symbol: "MATIC" },
+      { id: "binancecoin", symbol: "BNB" },
+      { id: "arbitrum", symbol: "ARB" },
+      { id: "optimism", symbol: "OP" },
+      { id: "base", symbol: "BASE" }
+    ];
 
     const iconMap = {
-      bitcoin: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png",
-      ethereum: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
-      litecoin: "https://assets.coingecko.com/coins/images/2/small/litecoin.png",
-      solana: "https://assets.coingecko.com/coins/images/4128/small/Solana.png",
-      tether: "https://assets.coingecko.com/coins/images/325/small/Tether-logo.png",
-      polygon: "https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png",
-      binancecoin: "https://assets.coingecko.com/coins/images/825/small/bnb-icon.png",
-      arbitrum: "https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-27_14-14-01.jpg",
-      optimism: "https://assets.coingecko.com/coins/images/25244/small/OP.jpeg",
-      base: "https://via.placeholder.com/28?text=B" // Placeholder karena belum resmi
+      bitcoin: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=026",
+      ethereum: "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=026",
+      litecoin: "https://cryptologos.cc/logos/litecoin-ltc-logo.png?v=026",
+      solana: "https://cryptologos.cc/logos/solana-sol-logo.png?v=026",
+      tether: "https://cryptologos.cc/logos/tether-usdt-logo.png?v=026",
+      polygon: "https://cryptologos.cc/logos/polygon-matic-logo.png?v=026",
+      binancecoin: "https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=026",
+      arbitrum: "https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=026",
+      optimism: "https://cryptologos.cc/logos/optimism-op-logo.png?v=026",
+      base: "https://cryptologos.cc/logos/base-base-logo.png?v=026"
     };
 
-    const fromSelect = document.getElementById('from');
-    const toSelect = document.getElementById('to');
-    const amount = document.getElementById('amount');
-    const result = document.getElementById('result');
-    const fromIcon = document.getElementById('fromIcon');
-    const toIcon = document.getElementById('toIcon');
-
-    fromIcon.onerror = () => fromIcon.src = 'https://via.placeholder.com/28';
-    toIcon.onerror = () => toIcon.src = 'https://via.placeholder.com/28';
-
-    let chart;
+    const fromSelect = document.getElementById("fromCurrency");
+    const toSelect = document.getElementById("toCurrency");
+    const iconFrom = document.getElementById("iconFrom");
+    const iconTo = document.getElementById("iconTo");
+    const amountInput = document.getElementById("amount");
+    const resultText = document.getElementById("result");
+    const loadingText = document.getElementById("loading");
 
     function populateSelects() {
-      for (const id in cryptos) {
-        const optionFrom = new Option(cryptos[id], id);
-        const optionTo = new Option(cryptos[id], id);
+      supportedCoins.forEach(coin => {
+        const optionFrom = document.createElement("option");
+        optionFrom.value = coin.id;
+        optionFrom.textContent = coin.symbol;
         fromSelect.appendChild(optionFrom);
+
+        const optionTo = document.createElement("option");
+        optionTo.value = coin.id;
+        optionTo.textContent = coin.symbol;
         toSelect.appendChild(optionTo);
-      }
+      });
+
       fromSelect.value = "bitcoin";
       toSelect.value = "ethereum";
+      updateIcons();
     }
 
     function updateIcons() {
-      fromIcon.src = iconMap[fromSelect.value];
-      toIcon.src = iconMap[toSelect.value];
+      iconFrom.src = iconMap[fromSelect.value];
+      iconTo.src = iconMap[toSelect.value];
     }
 
-    async function updateResult() {
-      const fromVal = fromSelect.value;
-      const toVal = toSelect.value;
-      const amt = parseFloat(amount.value);
+    async function convert() {
+      const from = fromSelect.value;
+      const to = toSelect.value;
+      const amount = parseFloat(amountInput.value);
 
-      updateIcons();
-
-      if (fromVal === toVal || isNaN(amt) || amt <= 0) {
-        result.textContent = 'Silakan pilih koin berbeda dan jumlah valid.';
+      if (!amount || amount <= 0) {
+        resultText.textContent = texts.inputValid;
         return;
       }
 
-      result.textContent = 'Mengambil data...';
+      loadingText.style.display = "block";
+      resultText.textContent = "";
 
       try {
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${fromVal},${toVal}&vs_currencies=usd`);
+        const res = await fetch(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`
+        );
         const data = await res.json();
-        const fromUSD = data[fromVal]?.usd;
-        const toUSD = data[toVal]?.usd;
+        const rate = data[from][to];
 
-        if (!fromUSD || !toUSD) throw new Error("Invalid price data");
-
-        const converted = (amt * fromUSD) / toUSD;
-        result.textContent = `${amt} ${fromVal.toUpperCase()} ≈ ${converted.toFixed(6)} ${toVal.toUpperCase()}`;
-      } catch {
-        result.textContent = 'Gagal mengambil data.';
-      }
-    }
-
-    async function drawChart() {
-      const coin = fromSelect.value;
-      try {
-        const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coin}/market_chart?vs_currency=usd&days=1`);
-        const data = await res.json();
-
-        const labels = data.prices.map(p => {
-          const date = new Date(p[0]);
-          return date.getHours() + ':' + ('0' + date.getMinutes()).slice(-2);
-        });
-        const prices = data.prices.map(p => p[1]);
-
-        const ctx = document.getElementById('priceChart').getContext('2d');
-        if (chart) chart.destroy();
-        chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: `Harga ${coin.toUpperCase()} (USD) - 24 Jam`,
-              data: prices,
-              borderColor: '#00ffcc',
-              backgroundColor: 'rgba(0, 255, 204, 0.1)',
-              tension: 0.25,
-              fill: true,
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { labels: { color: 'white' } }
-            },
-            scales: {
-              x: { ticks: { color: 'white' } },
-              y: { ticks: { color: 'white' } }
-            }
-          }
-        });
-
+        const converted = rate * amount;
+        resultText.textContent = `${amount} ${from.toUpperCase()} ≈ ${converted.toFixed(6)} ${to.toUpperCase()}`;
       } catch (err) {
-        console.error('Gagal ambil grafik:', err);
+        resultText.textContent = texts.failed;
+      } finally {
+        loadingText.style.display = "none";
       }
     }
 
-    // Inisialisasi awal
     populateSelects();
-    updateIcons();
-    updateResult();
-    drawChart();
+    convert();
 
-    fromSelect.addEventListener('change', () => {
-      updateResult();
-      drawChart();
+    fromSelect.addEventListener("change", () => {
+      updateIcons();
+      convert();
     });
-    toSelect.addEventListener('change', updateResult);
-    amount.addEventListener('input', updateResult);
+    toSelect.addEventListener("change", () => {
+      updateIcons();
+      convert();
+    });
+    amountInput.addEventListener("input", convert);
   </script>
 </body>
 </html>
