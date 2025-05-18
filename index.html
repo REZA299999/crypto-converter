@@ -21,11 +21,25 @@
       color: #fff;
       border: 1px solid #444;
       border-radius: 5px;
+      font-size: 1rem;
+      width: 150px;
+    }
+    input[type=number] {
+      width: 160px;
     }
     img.icon {
       width: 24px;
       vertical-align: middle;
       margin-right: 5px;
+    }
+    #result {
+      margin-top: 30px;
+      font-size: 1.3rem;
+      min-height: 2em;
+    }
+    .loading {
+      color: #ffb300;
+      font-style: italic;
     }
   </style>
 </head>
@@ -34,26 +48,26 @@
   <p>Konversi crypto populer secara real-time tanpa API key</p>
 
   <div>
-    <label>Dari:<br>
+    <label for="fromCurrency">Dari:<br>
       <img id="iconFrom" class="icon" src="" alt="icon" />
-      <select id="fromCurrency"></select>
+      <select id="fromCurrency" aria-label="Pilih mata uang dari"></select>
     </label>
   </div>
 
   <div>
-    <label>Ke:<br>
+    <label for="toCurrency">Ke:<br>
       <img id="iconTo" class="icon" src="" alt="icon" />
-      <select id="toCurrency"></select>
+      <select id="toCurrency" aria-label="Pilih mata uang ke"></select>
     </label>
   </div>
 
   <div>
-    <label>Jumlah:<br>
-      <input type="number" id="amount" value="1" min="0" step="any" />
+    <label for="amount">Jumlah:<br>
+      <input type="number" id="amount" value="1" min="0" step="any" aria-label="Jumlah yang ingin dikonversi" />
     </label>
   </div>
 
-  <h2 id="result">Masukkan jumlah untuk melihat hasil...</h2>
+  <h2 id="result" aria-live="polite" aria-atomic="true">Masukkan jumlah untuk melihat hasil...</h2>
 
   <script>
     const supportedCoins = [
@@ -66,7 +80,6 @@
       { symbol: "MATIC", id: "polygon", icon: "polygon" },
       { symbol: "ARB", id: "arbitrum", icon: "arbitrum" },
       { symbol: "OP", id: "optimism", icon: "optimism" }
-      // Hapus BASE karena kemungkinan tidak tersedia di CoinGecko
     ];
 
     const fromSelect = document.getElementById("fromCurrency");
@@ -76,6 +89,7 @@
     const amountInput = document.getElementById("amount");
     const resultText = document.getElementById("result");
 
+    // Populate dropdowns
     function populateSelects() {
       supportedCoins.forEach(({ symbol }) => {
         const optionFrom = document.createElement("option");
@@ -91,9 +105,11 @@
 
       fromSelect.value = "BTC";
       toSelect.value = "USDT";
+
       updateIcons();
     }
 
+    // Update icon images sesuai pilihan
     function updateIcons() {
       const from = supportedCoins.find(c => c.symbol === fromSelect.value);
       const to = supportedCoins.find(c => c.symbol === toSelect.value);
@@ -104,40 +120,51 @@
       console.log("Icons updated:", iconFrom.src, iconTo.src);
     }
 
+    // Disable form controls saat loading
+    function setLoading(isLoading) {
+      fromSelect.disabled = isLoading;
+      toSelect.disabled = isLoading;
+      amountInput.disabled = isLoading;
+      if (isLoading) {
+        resultText.textContent = "Memuat data harga...";
+        resultText.classList.add("loading");
+      } else {
+        resultText.classList.remove("loading");
+      }
+    }
+
+    // Fungsi utama konversi
     async function convert() {
       const from = supportedCoins.find(c => c.symbol === fromSelect.value);
       const to = supportedCoins.find(c => c.symbol === toSelect.value);
       const amount = parseFloat(amountInput.value);
 
-      console.log('Convert called with:', { from, to, amount });
-
-      if (!amount || amount <= 0) {
+      if (isNaN(amount)) {
         resultText.textContent = "Masukkan jumlah valid...";
-        console.warn("Invalid amount");
         return;
       }
-
+      if (amount <= 0) {
+        resultText.textContent = "Jumlah harus lebih dari nol.";
+        return;
+      }
       if (!from || !to) {
         resultText.textContent = "Mata uang tidak didukung.";
-        console.warn("Unsupported currency");
         return;
       }
+
+      setLoading(true);
 
       try {
         const ids = [from.id, to.id].join(",");
         const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`;
-        console.log("Fetching from CoinGecko:", url);
 
         const res = await fetch(url);
         if (!res.ok) throw new Error("Gagal mengambil data harga: " + res.status);
+
         const data = await res.json();
 
-        console.log("CoinGecko response:", data);
-
         if (!data[from.id] || !data[to.id]) {
-          resultText.textContent = "Data harga tidak lengkap.";
-          console.error("Missing price data for:", from.id, to.id);
-          return;
+          throw new Error("Data harga tidak lengkap.");
         }
 
         const priceFromUSD = data[from.id].usd;
@@ -146,13 +173,15 @@
         const converted = amount * (priceFromUSD / priceToUSD);
 
         resultText.textContent = `${amount} ${from.symbol} ≈ ${converted.toFixed(6)} ${to.symbol}`;
-        console.log("Conversion result:", resultText.textContent);
       } catch (error) {
-        resultText.textContent = "Gagal mengambil data harga.";
         console.error("Fetch error:", error);
+        resultText.textContent = "Gagal mengambil data harga. Coba lagi nanti.";
+      } finally {
+        setLoading(false);
       }
     }
 
+    // Inisialisasi
     populateSelects();
     convert();
 
