@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CryptoXchanger - Konversi Crypto Real-Time</title>
   <meta name="description" content="Konversi cryptocurrency populer seperti Bitcoin, Ethereum, USDT, dan lainnya secara real-time. Gratis, cepat, dan mudah." />
   <meta name="keywords" content="crypto converter, konversi crypto, bitcoin to ethereum, btc ke usdt, crypto realtime, exchange crypto" />
@@ -40,21 +40,21 @@
 
   <div>
     <label>Dari:<br>
-      <img id="iconFrom" class="icon" src="" alt="icon">
+      <img id="iconFrom" class="icon" src="" alt="icon dari crypto" />
       <select id="fromCurrency"></select>
     </label>
   </div>
 
   <div>
     <label>Ke:<br>
-      <img id="iconTo" class="icon" src="" alt="icon">
+      <img id="iconTo" class="icon" src="" alt="icon ke crypto" />
       <select id="toCurrency"></select>
     </label>
   </div>
 
   <div>
     <label>Jumlah:<br>
-      <input type="number" id="amount" value="1" min="0">
+      <input type="number" id="amount" value="1" min="0" />
     </label>
   </div>
 
@@ -69,22 +69,18 @@
       { id: "tether", symbol: "USDT" },
       { id: "polygon", symbol: "MATIC" },
       { id: "binancecoin", symbol: "BNB" },
-      { id: "arbitrum", symbol: "ARB" },
-      { id: "optimism", symbol: "OP" },
-      { id: "base", symbol: "BASE" }
+      { id: "arbitrum", symbol: "ARB" }
     ];
 
     const iconMap = {
-      bitcoin: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=026",
-      ethereum: "https://cryptologos.cc/logos/ethereum-eth-logo.png?v=026",
-      litecoin: "https://cryptologos.cc/logos/litecoin-ltc-logo.png?v=026",
-      solana: "https://cryptologos.cc/logos/solana-sol-logo.png?v=026",
-      tether: "https://cryptologos.cc/logos/tether-usdt-logo.png?v=026",
-      polygon: "https://cryptologos.cc/logos/polygon-matic-logo.png?v=026",
-      binancecoin: "https://cryptologos.cc/logos/binance-coin-bnb-logo.png?v=026",
-      arbitrum: "https://cryptologos.cc/logos/arbitrum-arb-logo.png?v=026",
-      optimism: "https://cryptologos.cc/logos/optimism-op-logo.png?v=026",
-      base: "https://cryptologos.cc/logos/base-base-logo.png?v=026"
+      bitcoin: "icons/bitcoin-btc-logo.png",
+      ethereum: "icons/ethereum-eth-logo.png",
+      litecoin: "icons/litecoin-ltc-logo.png",
+      solana: "icons/solana-sol-logo.png",
+      tether: "icons/tether-usdt-logo.png",
+      polygon: "icons/polygon-matic-logo.png",
+      binancecoin: "icons/binance-coin-bnb-logo.png",
+      arbitrum: "icons/arbitrum-arb-logo.png"
     };
 
     const fromSelect = document.getElementById("fromCurrency");
@@ -113,8 +109,8 @@
     }
 
     function updateIcons() {
-      iconFrom.src = iconMap[fromSelect.value];
-      iconTo.src = iconMap[toSelect.value];
+      iconFrom.src = iconMap[fromSelect.value] || "";
+      iconTo.src = iconMap[toSelect.value] || "";
     }
 
     async function convert() {
@@ -130,6 +126,10 @@
       try {
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`);
         const data = await res.json();
+        if (!data[from] || !data[from][to]) {
+          resultText.textContent = `Data harga untuk ${from.toUpperCase()} ke ${to.toUpperCase()} tidak tersedia.`;
+          return;
+        }
         const rate = data[from][to];
         const converted = rate * amount;
         resultText.textContent = `${amount} ${from.toUpperCase()} ≈ ${converted.toFixed(6)} ${to.toUpperCase()}`;
