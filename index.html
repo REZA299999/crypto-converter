@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CryptoXchanger - Konversi Crypto Real-Time (Debug)</title>
-  <meta name="description" content="Konversi cryptocurrency populer secara real-time tanpa API key." />
+  <title>CryptoXchanger - CoinMarketCap API</title>
   <style>
     body {
       background-color: #111;
@@ -13,189 +12,122 @@
       text-align: center;
       padding: 20px;
     }
-    h1 { color: #00f7c4; }
-    select, input {
+    input, select {
       padding: 10px;
       margin: 10px;
       background-color: #222;
       color: #fff;
       border: 1px solid #444;
       border-radius: 5px;
-      font-size: 1rem;
-      width: 150px;
     }
-    input[type=number] {
-      width: 160px;
+    button {
+      padding: 10px 20px;
+      background-color: #00f7c4;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #111;
+      font-weight: bold;
     }
-    img.icon {
-      width: 24px;
-      vertical-align: middle;
-      margin-right: 5px;
-    }
-    #result {
-      margin-top: 30px;
-      font-size: 1.3rem;
-      min-height: 2em;
-    }
-    .loading {
-      color: #ffb300;
-      font-style: italic;
+    button:hover {
+      background-color: #00d9aa;
     }
   </style>
 </head>
 <body>
-  <h1>💱 <span style="color: #00f7c4">CryptoXchanger Debug</span></h1>
-  <p>Konversi crypto populer secara real-time tanpa API key</p>
+  <h1>💱 CryptoXchanger - CoinMarketCap API</h1>
 
-  <div>
-    <label for="fromCurrency">Dari:<br>
-      <img id="iconFrom" class="icon" src="" alt="icon" />
-      <select id="fromCurrency" aria-label="Pilih mata uang dari"></select>
-    </label>
-  </div>
+  <label>Dari:<br />
+    <select id="fromCurrency">
+      <option value="BTC">BTC</option>
+      <option value="ETH">ETH</option>
+      <option value="USDT">USDT</option>
+      <option value="BNB">BNB</option>
+      <option value="SOL">SOL</option>
+      <option value="MATIC">MATIC</option>
+    </select>
+  </label>
 
-  <div>
-    <label for="toCurrency">Ke:<br>
-      <img id="iconTo" class="icon" src="" alt="icon" />
-      <select id="toCurrency" aria-label="Pilih mata uang ke"></select>
-    </label>
-  </div>
+  <label>Ke:<br />
+    <select id="toCurrency">
+      <option value="USD">USD</option>
+      <option value="BTC">BTC</option>
+      <option value="ETH">ETH</option>
+      <option value="USDT">USDT</option>
+    </select>
+  </label>
 
-  <div>
-    <label for="amount">Jumlah:<br>
-      <input type="number" id="amount" value="1" min="0" step="any" aria-label="Jumlah yang ingin dikonversi" />
-    </label>
-  </div>
+  <label>Jumlah:<br />
+    <input type="number" id="amount" value="1" min="0" step="any" />
+  </label>
 
-  <h2 id="result" aria-live="polite" aria-atomic="true">Masukkan jumlah untuk melihat hasil...</h2>
+  <br />
+
+  <button id="convertBtn">Konversi</button>
+
+  <h2 id="result">Masukkan jumlah dan klik Konversi</h2>
 
   <script>
-    const supportedCoins = [
-      { symbol: "BTC", id: "bitcoin", icon: "bitcoin" },
-      { symbol: "ETH", id: "ethereum", icon: "ethereum" },
-      { symbol: "LTC", id: "litecoin", icon: "litecoin" },
-      { symbol: "SOL", id: "solana", icon: "solana" },
-      { symbol: "USDT", id: "tether", icon: "tether" },
-      { symbol: "BNB", id: "binancecoin", icon: "binancecoin" },
-      { symbol: "MATIC", id: "polygon", icon: "polygon" },
-      { symbol: "ARB", id: "arbitrum", icon: "arbitrum" },
-      { symbol: "OP", id: "optimism", icon: "optimism" }
-    ];
+    const apiKey = "5e995a96-48b6-49e4-8af5-068f1a349955";
 
     const fromSelect = document.getElementById("fromCurrency");
     const toSelect = document.getElementById("toCurrency");
-    const iconFrom = document.getElementById("iconFrom");
-    const iconTo = document.getElementById("iconTo");
     const amountInput = document.getElementById("amount");
     const resultText = document.getElementById("result");
+    const convertBtn = document.getElementById("convertBtn");
 
-    // Populate dropdowns
-    function populateSelects() {
-      supportedCoins.forEach(({ symbol }) => {
-        const optionFrom = document.createElement("option");
-        optionFrom.value = symbol;
-        optionFrom.textContent = symbol;
-        fromSelect.appendChild(optionFrom);
-
-        const optionTo = document.createElement("option");
-        optionTo.value = symbol;
-        optionTo.textContent = symbol;
-        toSelect.appendChild(optionTo);
-      });
-
-      fromSelect.value = "BTC";
-      toSelect.value = "USDT";
-
-      updateIcons();
-    }
-
-    // Update icon images sesuai pilihan
-    function updateIcons() {
-      const from = supportedCoins.find(c => c.symbol === fromSelect.value);
-      const to = supportedCoins.find(c => c.symbol === toSelect.value);
-      iconFrom.src = from ? `https://crypto-icons.pages.dev/api/icon/${from.icon}/color` : "";
-      iconTo.src = to ? `https://crypto-icons.pages.dev/api/icon/${to.icon}/color` : "";
-      iconFrom.alt = from ? from.symbol : "";
-      iconTo.alt = to ? to.symbol : "";
-      console.log("Icons updated:", iconFrom.src, iconTo.src);
-    }
-
-    // Disable form controls saat loading
-    function setLoading(isLoading) {
-      fromSelect.disabled = isLoading;
-      toSelect.disabled = isLoading;
-      amountInput.disabled = isLoading;
-      if (isLoading) {
-        resultText.textContent = "Memuat data harga...";
-        resultText.classList.add("loading");
-      } else {
-        resultText.classList.remove("loading");
+    async function getPrice(symbol) {
+      const url = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=${symbol}`;
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "X-CMC_PRO_API_KEY": apiKey
+          }
+        });
+        if (!res.ok) throw new Error("Error fetching price");
+        const data = await res.json();
+        return data.data[symbol].quote.USD.price;
+      } catch (error) {
+        console.error(error);
+        return null;
       }
     }
 
-    // Fungsi utama konversi
     async function convert() {
-      const from = supportedCoins.find(c => c.symbol === fromSelect.value);
-      const to = supportedCoins.find(c => c.symbol === toSelect.value);
+      const from = fromSelect.value;
+      const to = toSelect.value;
       const amount = parseFloat(amountInput.value);
 
-      if (isNaN(amount)) {
+      if (!amount || amount <= 0) {
         resultText.textContent = "Masukkan jumlah valid...";
         return;
       }
-      if (amount <= 0) {
-        resultText.textContent = "Jumlah harus lebih dari nol.";
-        return;
-      }
-      if (!from || !to) {
-        resultText.textContent = "Mata uang tidak didukung.";
+      if (from === to) {
+        resultText.textContent = `Jumlah: ${amount} ${from}`;
         return;
       }
 
-      setLoading(true);
+      resultText.textContent = "Menghitung...";
 
-      try {
-        const ids = [from.id, to.id].join(",");
-        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`;
+      const priceFrom = await getPrice(from);
+      let priceTo;
 
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Gagal mengambil data harga: " + res.status);
-
-        const data = await res.json();
-
-        if (!data[from.id] || !data[to.id]) {
-          throw new Error("Data harga tidak lengkap.");
-        }
-
-        const priceFromUSD = data[from.id].usd;
-        const priceToUSD = data[to.id].usd;
-
-        const converted = amount * (priceFromUSD / priceToUSD);
-
-        resultText.textContent = `${amount} ${from.symbol} ≈ ${converted.toFixed(6)} ${to.symbol}`;
-      } catch (error) {
-        console.error("Fetch error:", error);
-        resultText.textContent = "Gagal mengambil data harga. Coba lagi nanti.";
-      } finally {
-        setLoading(false);
+      if (to === "USD") {
+        priceTo = 1;
+      } else {
+        priceTo = await getPrice(to);
       }
+
+      if (priceFrom === null || priceTo === null) {
+        resultText.textContent = "Gagal mengambil data harga.";
+        return;
+      }
+
+      const converted = amount * (priceFrom / priceTo);
+      resultText.textContent = `${amount} ${from} ≈ ${converted.toFixed(6)} ${to}`;
     }
 
-    // Inisialisasi
-    populateSelects();
-    convert();
-
-    fromSelect.addEventListener("change", () => {
-      updateIcons();
-      convert();
-    });
-
-    toSelect.addEventListener("change", () => {
-      updateIcons();
-      convert();
-    });
-
-    amountInput.addEventListener("input", convert);
+    convertBtn.addEventListener("click", convert);
   </script>
 </body>
 </html>
