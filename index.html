@@ -126,14 +126,25 @@
       }
 
       try {
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${from}&vs_currencies=${to}`);
+        // Ambil harga dari dan ke dalam USD
+        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${from},${to}&vs_currencies=usd`);
         const data = await res.json();
-        if (!data[from] || !data[from][to]) {
-          resultText.textContent = `Data harga untuk ${from.toUpperCase()} ke ${to.toUpperCase()} tidak tersedia.`;
+
+        if (!data[from] || !data[to]) {
+          resultText.textContent = "Data harga tidak tersedia.";
           return;
         }
-        const rate = data[from][to];
-        const converted = rate * amount;
+
+        const priceFromUSD = data[from].usd;
+        const priceToUSD = data[to].usd;
+
+        if (!priceFromUSD || !priceToUSD) {
+          resultText.textContent = "Harga USD tidak tersedia untuk salah satu koin.";
+          return;
+        }
+
+        // Hitung hasil konversi
+        const converted = (amount * priceFromUSD) / priceToUSD;
         resultText.textContent = `${amount} ${from.toUpperCase()} ≈ ${converted.toFixed(6)} ${to.toUpperCase()}`;
       } catch (err) {
         resultText.textContent = "Gagal mengambil data.";
