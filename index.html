@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CryptoXchanger - Dark Mode</title>
-  <meta name="description" content="Converter crypto interaktif real-time dengan tema gelap. Dukungan BTC, ETH, LTC, SOL, USDT.">
+  <meta name="description" content="Converter crypto interaktif real-time dengan tema gelap. Dukungan BTC, ETH, LTC, SOL, USDT, dan lainnya.">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -62,30 +62,18 @@
 </head>
 <body>
   <h1>💱 CryptoXchanger</h1>
-  <p style="text-align: center;">Konversi BTC, ETH, SOL, LTC, USDT secara real-time</p>
+  <p style="text-align: center;">Konversi crypto populer secara real-time</p>
 
   <label>Dari:</label>
   <div class="crypto-row">
     <img id="fromIcon" class="crypto-icon" src="" alt="icon" />
-    <select id="from">
-      <option value="bitcoin">Bitcoin (BTC)</option>
-      <option value="ethereum">Ethereum (ETH)</option>
-      <option value="litecoin">Litecoin (LTC)</option>
-      <option value="solana">Solana (SOL)</option>
-      <option value="tether">Tether (USDT)</option>
-    </select>
+    <select id="from"></select>
   </div>
 
   <label>Ke:</label>
   <div class="crypto-row">
     <img id="toIcon" class="crypto-icon" src="" alt="icon" />
-    <select id="to">
-      <option value="ethereum">Ethereum (ETH)</option>
-      <option value="bitcoin">Bitcoin (BTC)</option>
-      <option value="litecoin">Litecoin (LTC)</option>
-      <option value="solana">Solana (SOL)</option>
-      <option value="tether">Tether (USDT)</option>
-    </select>
+    <select id="to"></select>
   </div>
 
   <label>Jumlah:</label>
@@ -98,35 +86,65 @@
   <footer>&copy; 2025 CryptoXchanger. Real-time crypto converter.</footer>
 
   <script>
-    const from = document.getElementById('from');
-    const to = document.getElementById('to');
+    const cryptos = {
+      bitcoin: "Bitcoin (BTC)",
+      ethereum: "Ethereum (ETH)",
+      litecoin: "Litecoin (LTC)",
+      solana: "Solana (SOL)",
+      tether: "Tether (USDT)",
+      polygon: "Polygon (MATIC)",
+      binancecoin: "BNB (BNB)",
+      arbitrum: "Arbitrum (ARB)",
+      avalanche-2: "Avalanche (AVAX)",
+      optimism: "Optimism (OP)",
+      base: "Base (BASE)"
+    };
+
+    const iconMap = {
+      bitcoin: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png",
+      ethereum: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+      litecoin: "https://assets.coingecko.com/coins/images/2/small/litecoin.png",
+      solana: "https://assets.coingecko.com/coins/images/4128/small/Solana.png",
+      tether: "https://assets.coingecko.com/coins/images/325/small/Tether-logo.png",
+      polygon: "https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png",
+      binancecoin: "https://assets.coingecko.com/coins/images/825/small/bnb-icon.png",
+      arbitrum: "https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-27_14-14-01.jpg",
+      avalanche-2: "https://assets.coingecko.com/coins/images/12559/small/coin-round-red.png",
+      optimism: "https://assets.coingecko.com/coins/images/25244/small/OP.jpeg",
+      base: "https://via.placeholder.com/28?text=B" // Placeholder karena belum resmi
+    };
+
+    const fromSelect = document.getElementById('from');
+    const toSelect = document.getElementById('to');
     const amount = document.getElementById('amount');
     const result = document.getElementById('result');
     const fromIcon = document.getElementById('fromIcon');
     const toIcon = document.getElementById('toIcon');
 
-    const iconMap = {
-      bitcoin: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
-      ethereum: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
-      litecoin: 'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
-      solana: 'https://assets.coingecko.com/coins/images/4128/small/Solana.png',
-      tether: 'https://assets.coingecko.com/coins/images/325/small/Tether-logo.png',
-    };
-
-    // fallback icon
     fromIcon.onerror = () => fromIcon.src = 'https://via.placeholder.com/28';
     toIcon.onerror = () => toIcon.src = 'https://via.placeholder.com/28';
 
-    let chart; // chart global
+    let chart;
+
+    function populateSelects() {
+      for (const id in cryptos) {
+        const optionFrom = new Option(cryptos[id], id);
+        const optionTo = new Option(cryptos[id], id);
+        fromSelect.appendChild(optionFrom);
+        toSelect.appendChild(optionTo);
+      }
+      fromSelect.value = "bitcoin";
+      toSelect.value = "ethereum";
+    }
 
     function updateIcons() {
-      fromIcon.src = iconMap[from.value];
-      toIcon.src = iconMap[to.value];
+      fromIcon.src = iconMap[fromSelect.value];
+      toIcon.src = iconMap[toSelect.value];
     }
 
     async function updateResult() {
-      const fromVal = from.value;
-      const toVal = to.value;
+      const fromVal = fromSelect.value;
+      const toVal = toSelect.value;
       const amt = parseFloat(amount.value);
 
       updateIcons();
@@ -141,8 +159,10 @@
       try {
         const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${fromVal},${toVal}&vs_currencies=usd`);
         const data = await res.json();
-        const fromUSD = data[fromVal].usd;
-        const toUSD = data[toVal].usd;
+        const fromUSD = data[fromVal]?.usd;
+        const toUSD = data[toVal]?.usd;
+
+        if (!fromUSD || !toUSD) throw new Error("Invalid price data");
 
         const converted = (amt * fromUSD) / toUSD;
         result.textContent = `${amt} ${fromVal.toUpperCase()} ≈ ${converted.toFixed(6)} ${toVal.toUpperCase()}`;
@@ -152,7 +172,7 @@
     }
 
     async function drawChart() {
-      const coin = from.value;
+      const coin = fromSelect.value;
       try {
         const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coin}/market_chart?vs_currency=usd&days=1`);
         const data = await res.json();
@@ -195,17 +215,18 @@
       }
     }
 
-    from.addEventListener('change', () => {
-      updateResult();
-      drawChart();
-    });
-    to.addEventListener('change', updateResult);
-    amount.addEventListener('input', updateResult);
-
-    // Init saat pertama
+    // Inisialisasi awal
+    populateSelects();
     updateIcons();
     updateResult();
     drawChart();
+
+    fromSelect.addEventListener('change', () => {
+      updateResult();
+      drawChart();
+    });
+    toSelect.addEventListener('change', updateResult);
+    amount.addEventListener('input', updateResult);
   </script>
 </body>
 </html>
