@@ -106,12 +106,16 @@
     const toIcon = document.getElementById('toIcon');
 
     const iconMap = {
-      bitcoin: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=026',
-      ethereum: 'https://cryptologos.cc/logos/ethereum-eth-logo.png?v=026',
-      litecoin: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png?v=026',
-      solana: 'https://cryptologos.cc/logos/solana-sol-logo.png?v=026',
-      tether: 'https://cryptologos.cc/logos/tether-usdt-logo.png?v=026',
+      bitcoin: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+      ethereum: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+      litecoin: 'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
+      solana: 'https://assets.coingecko.com/coins/images/4128/small/Solana.png',
+      tether: 'https://assets.coingecko.com/coins/images/325/small/Tether-logo.png',
     };
+
+    // fallback icon
+    fromIcon.onerror = () => fromIcon.src = 'https://via.placeholder.com/28';
+    toIcon.onerror = () => toIcon.src = 'https://via.placeholder.com/28';
 
     let chart; // chart global
 
