@@ -1,0 +1,5 @@
+
+User-agent: *
+Allow: /
+
+Sitemap: https://reza299999.github.io/crypto-converter/sitemap.xml
